@@ -1,0 +1,314 @@
+---
+title: "PLS 397: Midterm"
+author: "Zane Shango"
+date: "2/25/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Guidelines
+
+Midterm is open book and open internet but you must work alone. You must submit your .Rmd and a .PDF version of it to the midterm d2l folder by **3/3 12pm**. The data file you will be using for the midterm is: `midtermData.rda`.
+
+```{r, echo=TRUE, eval=TRUE}
+rm(list=ls())
+
+# loading in the .rda below will add an object to your workspace called data
+load('midtermData.rda')
+
+# data is a tibble dataframe
+str(data) # structure of data
+
+# we have both information from wBank and polity
+# world bank variables: 
+  # gdpCap (GDP per capita (constant 2000 USD))
+  # lifeExpect (life expectancy (years))
+  # pop (population)
+  # logGdpCap (logged GDP per capita (constant 2000 USD))
+  # logPop (logged population)
+  # co2 (carbon dioxide emissions in metric tons per capita)
+# polity variables:
+  # polity2: -10 to 10, -10 indicates full autocracy, 10 indicates full democracy
+```
+
+Additionally, you will want to load the tidyverse library.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+# loading the tidyverse library will also call the 
+# ggplot2, dplyr, and magrittr (%>%) libraries to your workspace
+library(tidyverse) 
+```
+
+## Q1a: Plotting
+
+
+
+```{r}
+
+library(ggthemes)
+
+sri_lanka <- data %>%
+  filter((country == "Sri Lanka") & (year >= 1960 & year <= 2016))
+
+# min and max of years (range) that Sri Lanka has ratings for 
+min(sri_lanka$year)
+max(sri_lanka$year)
+
+sri_plot <- ggplot(data = sri_lanka, aes(x = year, y = polity2)) + 
+  geom_point() + 
+  geom_line() + 
+  scale_x_continuous(breaks = c(1961,1970,1980,1990,2000,2010,2014)) + 
+  scale_y_continuous(breaks = c(1,2,3,4,5,6,7,8,9,10)) +
+  labs( 
+    title = "Sri Lanka Democracy Rating (1961-2014)",
+    x = "Year",
+    y = "Democracry Rating") + 
+  theme_economist_white() +     # use white colored economist theme
+  theme(plot.title = element_text(hjust = .5)) # override that theme for the title position to be centered
+
+sri_plot
+```
+
+## Q1b: Plotting
+
+
+
+```{r}
+s_asia <- data %>%
+  filter(region == "South Asia") %>%
+  group_by(country)
+
+
+s_asia_plot <- ggplot(data = s_asia, aes(x = year, y = polity2, color = country)) +
+  geom_line() +
+  scale_x_continuous(breaks = c(1960,1985,2016)) +
+  scale_y_continuous(breaks = c(-10,-8,-6,-4,-2,0,2,4,6,8,10)) +
+  labs(
+    title = "South Asia Democracy Rating (1960-2016)",
+    x = "Year",
+    y = "Democracry Rating", 
+    color = "Country") +
+  theme_economist_white() +    
+  theme(plot.title = element_text(hjust = .5),
+        strip.text.x = element_text(size = 8),
+        axis.text.x = element_text(size = 6, angle = 45),
+        legend.position = "none") + 
+  facet_wrap(~country, nrow = 1) 
+
+
+# remove legend because the line colors already clearly correspond to the south asian countries
+s_asia_plot
+
+
+```
+
+
+Sort of hard to read, but you can see India and Sri Lanka have steady democracy ratings in positive values (India is by far the most democratic). Nepal is on the rise, but is still faily inconsistent, while Bangladesh follows the opposite trend where is seems to be getting worse, but not in a consistent trend. Pakistan is all over the place and it appears that depending on the leader the country will be either very democratic or borderline autocratic, which is strange. Afghanistan only has one observed year, but is rated below 0.
+
+
+## Q2a: Summarizing TSCS Data
+
+
+
+```{r}
+# new dataframe with column giving 1 if that polity2 value is greater than or equal to 6 and 0 if not
+democ_g6 <- data %>%
+  mutate(democ_greater6 = ifelse(polity2 >= 6, 1, 0)) 
+
+# group by region and year and get mean value of countries in that region, that year with a democ rating of 6 or higher
+democs_df <- democ_g6 %>%
+  group_by(region,year) %>%
+  summarize(mean_democs = mean(democ_greater6))
+
+democs_df
+
+
+```
+
+## Q2b: Visualizing Summarized TSCS Data
+    
+
+
+```{r}
+# visualize the number of democracies in a region changing over time
+
+democs_region_plot <- ggplot(data = democs_df, aes(x = year, y = mean_democs, color = region)) + 
+  geom_line() + 
+  labs(
+    title = "Regional Proportion of Democracies",
+    x = "Year",
+    y = "Proportion of Democracies") + 
+  theme_economist_white() +    
+  theme(plot.title = element_text(hjust = .5),
+        strip.text.x = element_text(size = 7),
+        axis.text.x = element_text(size = 6, angle = 45),
+        legend.position = "none") + 
+  facet_wrap(~region, nrow = 1,labeller = label_wrap_gen(width=10))
+
+# labeller in facet_wrap allows me to wrap the title of the facets so it is readable
+# remove legend becuase again the colors clearly are associated with regions
+
+democs_region_plot
+  
+  
+
+```
+
+These results are mostly what I expected. North America has been all democracies since 1960, which is impressive, while Latin America and the Caribbean have been steadily rising to the point where almost all of those countries are democracies. Sub-Saharan Africa and East Asia & Pacific have both been rising as well which is good to see. South Asia has been steadily in the range of roughly half democracies, while Europe and Central Asia has been steady at above 75% of those countries have been rated democracies. The most interesting one in my opinion is the Middle East and North Africa, where in 1960 all the countries were democratic however it took a steep dive do below 25% of them being democratic for about 30 years before it's started to rise towards more democracies once again. I believe this lack of democracy presence in the Middle East would be due to the rise of many dictator-like rulers such as Saddam Hussein in Iraq, as well as the domination of Oil on the overall Middle Eastern Economy in those years. 
+
+
+
+## Q3a: Income and Democracy
+
+
+
+```{r}
+# create a new dataframe for plotting the relationship between GDP and democracy rating
+
+gdp_democ <- data %>%
+  filter(year %in% c(1960,1980,2000,2014)) %>%
+  mutate(pop_adjust = pop/logPop)
+
+# chose pop/logPop because it gives the most levels of population without them being super close together like logPop, while pop only gives 2 levels
+
+gdp_democ_plot <- ggplot(data = gdp_democ, aes(x = polity2, y = logGdpCap, color = region, size = pop_adjust)) + 
+  geom_point(alpha = .6) + 
+  labs(
+    title = "Logged GDP per Capita by Democracy Rating",
+    x = "Democracy Rating",
+    y = "Logged GDP per Capita",
+    color = "Region",
+    size = "Population") + 
+  theme_economist_white() +    
+  theme(plot.title = element_text(hjust = .5, size = 10),
+        strip.text.x = element_text(size = 7),
+        axis.text.x = element_text(size = 6),
+        legend.position = "right",
+        legend.text = element_text(size = 8)) + 
+  facet_wrap(~year, nrow = 1) + 
+  scale_color_brewer(palette = 'Dark2')
+
+gdp_democ_plot
+  
+  
+```
+
+
+This is what I expected, showing North American and Europe & Central American to have the highest democracy ratings as which seem to be trending towards higher logged GDP per capita, which some excepts to this idea like osme Middle Eastern countries for example.
+
+## Q3b: Income and Democracy
+
+
+
+```{r}
+# 2000 dataframe without north america
+no_nAmerica00 <- data %>%
+  filter((!region == "North America") & (year == 2000)) %>%
+  mutate(pop_adjust = pop/logPop)
+
+# 2000 plot
+inc_dem_00 <- ggplot(data = no_nAmerica00, aes(x = polity2, y = logGdpCap, color = region, size = pop/logPop)) + 
+  geom_point(alpha = .6) + 
+  labs(
+    title = "2000 Logged GDP per Capita by Democracy Rating",
+    x = "Democracy Rating",
+    y = "Logged GDP per Capita",
+    color = "Region",
+    size = "Population") + 
+  theme_economist_white() +    
+  theme(plot.title = element_text(hjust = .5, size = 10),
+        strip.text.x = element_text(size = 7),
+        axis.text.x = element_text(size = 6),
+        legend.position = "right",
+        legend.text = element_text(size = 8)) + 
+  guides(color = FALSE) + 
+  facet_wrap(~region, nrow = 1, labeller = label_wrap_gen(width=10)) + 
+  scale_color_brewer(palette = 'Dark2')
+
+# guides allows me to set color equal to false, so it removes the pointless region/color legend
+inc_dem_00
+
+
+# 2014 dataframe without north america
+no_nAmerica14 <- data %>%
+  filter((!region == "North America") & (year == 2014)) %>%
+  mutate(pop_adjust = pop/logPop)
+
+# 2014 plot
+inc_dem_14 <- ggplot(data = no_nAmerica14, aes(x = polity2, y = logGdpCap, color = region, size = pop/logPop)) + 
+  geom_point(alpha = .6) + 
+  labs(
+    title = "2014 Logged GDP per Capita by Democracy Rating",
+    x = "Democracy Rating",
+    y = "Logged GDP per Capita",
+    color = "Region",
+    size = "Population") + 
+  theme_economist_white() +    
+  theme(plot.title = element_text(hjust = .5, size = 10),
+        strip.text.x = element_text(size = 7),
+        axis.text.x = element_text(size = 6),
+        legend.position = "right",
+        legend.text = element_text(size = 8)) + 
+  guides(color = FALSE) + 
+  facet_wrap(~region, nrow = 1, labeller = label_wrap_gen(width=10)) + 
+  scale_color_brewer(palette = 'Dark2')
+
+inc_dem_14
+
+# 2014 plot
+```
+
+
+In Europe & Central Asia, a higher democracy rating seems to lead to higher logged GDP per Capita, as well as in Latin American & Caribbean and South Asia (though those aren't quite as clear). East Asia & Pacific follows this trend in a way, but it is not very clear as it is much more split. Sub-Saharan Africa doesn't seem to follow much of a trend at all, as those countries are spread out fairly evenly. However, in the Middle East & North Africa, a less democratic country can lead to a higher logged GDP per Capita, and in fact there appears to be only one country with a positive democracy rating (it ranks 3rd in logged GDP per capita). These trends above stayed just about the same in the year 2014, however Middle East & North Africa took a step in the direction of democracy, and it doesn't appear that their logGDPcap was effected much at all, which is a good sign for the future economic status of the Middle East & North Africa.
+
+## Q4
+
+
+
+```{r}
+# I am going to focus on how c02 emissions may effect life expectancy, while attempting to show the affect c02 emmissions has on logGDPcap
+# this is because co2 emmissions are caused mostly by industrialization that can lead to higher GDP
+# I will mutate a column to determine if the country is leaning democratic or leaning autocratic
+# I will also only use the years between 2010-2014
+
+q4_df <- data %>%
+  filter(year %in% c(2010,2011,2012,2013,2014)) %>%
+  mutate(lean = ifelse(polity2 > 0, "Democratic", "Autocratic"))
+
+q4_plot <- ggplot(data = q4_df, aes( x = lifeExpect, y = co2, color = lean, size = gdpCap)) + 
+  geom_point(alpha = .4) + 
+  labs(
+    title = "2010s Life Expectancy by CO2 Emissions",
+    x = "Life Expectancy (Years)",
+    y = "CO2 Emissions",
+    color = "Lean",
+    size = "GDP per Capita") + 
+  theme_economist_white() +    
+  theme(plot.title = element_text(hjust = .5, size = 10),
+        strip.text.x = element_text(size = 7),
+        axis.text.x = element_text(size = 6),
+        legend.position = "right",
+        legend.text = element_text(size = 8)) + 
+  facet_wrap(~region, nrow = 1, labeller = label_wrap_gen(width=10)) + 
+  scale_color_brewer(palette = 'Dark2') + 
+  scale_color_manual(values = c('Democratic' = 'green4', 'Autocratic' = 'red2'))
+  
+
+q4_plot
+
+
+
+```
+
+
+As I expected, just about all my assumptions were found here: as GDP per Capita increased co2 emissions seemed to increase in most cases as well, the countries with more democratic leanings had higher life expectancies (except for East Asia & Pacific which had multiple autocratic countries with what appears to be some of the highest life expectancies), and as with most of the other questions the Middle East & North Africa follows opposing trends to the majority of the other regions as their mostly autocratic still (however they have by far the highest co2 emissions). 
+
+
+
+
+
