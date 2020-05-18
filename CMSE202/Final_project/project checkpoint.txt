@@ -1,0 +1,6 @@
+Day 19 pre-class 
+
+Final Project questions.
+1. The goal of our project is to predict sports results. Whether it is predicting a score of a game, projecting a player’s points for their next game, or predicting a winner of a tournament. 
+
+2. As we are not sure what our project may entitle, we will divide the parts evenly, so no one is working more than another group member. We will need to gather data, perform some calculations and predict the results.
