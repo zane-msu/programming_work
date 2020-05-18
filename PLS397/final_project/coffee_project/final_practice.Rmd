@@ -1,0 +1,65 @@
+---
+title: "Final_Starbucks"
+author: "Zane Shango"
+date: "3/24/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Practice mapping
+
+```{r}
+setwd("~/PLS397/final_project/starbucks")
+
+starbucks <- read.csv("directory.csv")
+
+
+# change factor variables to characters
+starbucks$City <- as.character(starbucks$City)
+starbucks$State.Province <- as.character(starbucks$State.Province)
+starbucks$Country <- as.character(starbucks$Country)
+starbucks$Postcode <- as.character(starbucks$Postcode)
+starbucks$Brand <- as.character(starbucks$Brand)
+
+# filter starbucks to only US locations, filter out alaska and hawaii
+# starbucks <- starbucks[(starbucks$Country == 'US') & (starbucks$State.Province != 'AK') & starbucks$State.Province != 'HI',]
+starbucks <- starbucks %>% 
+  filter(Country == 'US') 
+  
+
+# change state abbreviations to lowercase and names to match map data
+starbucks$State.Province <- tolower(abbr2state(starbucks$State.Province))
+
+# create state abbreviation column for map
+starbucks$State.Abbr <- state2abbr(starbucks$State.Province)
+
+
+dunkin <- read.csv("dunkin.csv")
+
+```
+
+
+```{r}
+library(tidyverse)
+
+# combine dataframes for mapping with plotly
+
+# start by masking starbucks and dunkin dataframes, to have only the columns needed for mapping
+# and rename the columns so they match
+starbucks_map <- starbucks %>%
+  select(Brand, City, State.Abbr, Country, Longitude, Latitude)
+  
+dunkin_map <- dunkin %>%
+  select(name, city, state, country, lng, lat) %>%
+  rename(Brand = name, City = city, State.Abbr = state, Country = country, Longitude = lng, Latitude = lat)
+
+
+# rbind them into a new dataframe
+map_data <- rbind(starbucks_map, dunkin_map)
+
+
+```
+
